@@ -6,12 +6,15 @@ To run the script, at minimum you will need a valid SMTP Address for a user that
 
 To test basic AutoDiscover and a Empty Bearer Authorization check you can run: 
 `.\Test-HMAEAS.ps1 user@contoso.com`
-![image](img/img01.png)
+
+![image-01](img/img01.png)
 
 To test basic AutoDiscover with a custom AutoDiscover Name and also do Empty Bearer Authorization check you can run: 
 `.\Test-HMAEAS.ps1 user@contoso.com -CustomAutoD autodiscover.contoso.com`
-![image](img/img04.png)
+
+![image-04](img/img04.png)
 
 To test basic EAS Connectivity you can run (you will need to use the users credentials for this test): 
 `.\Test-HMAEAS.ps1 user@contoso.com -TestEAS`
-![image](img/img05.png)
+
+![image-05](img/img05.png)
