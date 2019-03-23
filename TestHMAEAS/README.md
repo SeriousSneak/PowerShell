@@ -5,11 +5,10 @@ This script allows you to check and see if your on-premises Exchange environment
 To run the script, at minimum you will need a valid SMTP Address for a user that is located on-premises.
 
 To test basic AutoDiscover and a Empty Bearer Authorization check you can run: .\Test-HMAEAS.ps1 user@contoso.com
+![image](img/img01.png)
 
 To test basic AutoDiscover with a custom AutoDiscover Name and also do Empty Bearer Authorization check you can run: .\Test-HMAEAS.ps1 user@contoso.com -CustomAutoD autodiscover.contoso.com ]
+![image](img/img04.png)
 
 To test basic EAS Connectivity you can run (you will need to use the users credentials for this test): .\Test-HMAEAS.ps1 user@contoso.com -TestEAS
-
-To test basic AutoDiscover with a custom AutoDiscover Name and also do Empty Bearer Authorization check you can run: .\Test-HMAEAS.ps1 user@contoso.com -CustomAutoD autodiscover.contoso.com
-
-To test basic EAS Connectivity you can run (you will need to use the users credentials for this test): .\Test-HMAEAS.ps1 user@contoso.com -TestEAS
+![image](img/img05.png)
