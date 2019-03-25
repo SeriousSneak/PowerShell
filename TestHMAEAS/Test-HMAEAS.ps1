@@ -1,6 +1,6 @@
 #
 # Test-HMAEAS
-# Modified 2019/02/15
+# Modified 2019/03/24
 # Syntax for running this script:
 #
 # .\Test-HMAEAS.ps1 -SMTP <User's SMTP Address> -CustomAutoD <Specify a custom AutoDiscover Hostname> -SMTPAddress -TestEAS 
@@ -45,7 +45,6 @@ param (
 )
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
 $SMTPAddress = $SMTP.Split("@")
 
 Function Read-AutoDv2EAS {
@@ -71,18 +70,28 @@ Function Read-AutoDv2EAS {
             return $jsonResponse.Url
             Write-Host
         }
-        catch [System.Net.Sockets.SocketException]{
+        catch [System.Net.Sockets.SocketException] {
             Write-Host
             Write-Host "We sent an AutoDiscover Request to On-Premises for the Exchange ActiveSync Virtual Directory and below is the response" -ForegroundColor Green
             Write-Host "The response should contain the Protocol ActiveSync with a valid URL" -ForegroundColor Yellow
             Write-Host "---------------------------------------------------------------------------------------------------------------"
             Write-Host "ERROR: We were unable to complete the AutoDiscover request." -ForegroundColor Red -Verbose
-            Write-Host "Please ensure that autodiscover.$($SMTPAddress[1]) is the correct AutoDiscover endpoint and is not being blocked by a firewall!" -ForegroundColor Yellow -Verbose
+            Write-Host "Please ensure that autodiscover.$($SMTPAddress[1]) is the correct AutoDiscover endpoint and is not being blocked by a firewall" -ForegroundColor Yellow -Verbose
             Write-Host
         }
+        catch [System.Net.WebException] {
+            Write-Host
+            Write-Host "We sent an AutoDiscover Request to On-Premises for the Exchange ActiveSync Virtual Directory and below is the response" -ForegroundColor Green
+            Write-Host "The response should contain the Protocol ActiveSync with a valid URL" -ForegroundColor Yellow
+            Write-Host "---------------------------------------------------------------------------------------------------------------"
+            Write-Host "ERROR: We were unable to complete the AutoDiscover request." -ForegroundColor Red -Verbose
+            Write-Host "Please ensure that autodiscover.$($SMTPAddress[1]) is the correct AutoDiscover endpoint and is able to be resolved in DNS" -ForegroundColor Yellow -Verbose
+            Write-Host
+        }        
         catch {
-            Write-Error $_.Exception
-            exit
+            Write-Host
+            Write-Error $_.Exception.Message
+            Write-Host            
         }
     }
 }
@@ -105,7 +114,7 @@ Function Test-EASBearer {
             Write-Host "The response should contain a valid WWW-Authenticate=Bearer. Make sure the authorization_uri is populated" -ForegroundColor Yellow
             Write-Host "---------------------------------------------------------------------------------------------------------------"
             Write-Host "ERROR: We were unable to connect to the Exchange ActiveSync Virtual Directory." -ForegroundColor Red -Verbose
-            Write-Host "Please ensure that $easUrl is the correct Exchange ActiveSync endpoint and is not being blocked by a firewall!" -ForegroundColor Yellow -Verbose
+            Write-Host "Please ensure that $easUrl is the correct Exchange ActiveSync endpoint and is not being blocked by a firewall" -ForegroundColor Yellow -Verbose
             Write-Host
         }
         catch [System.Management.Automation.ValidationMetadataException] {
@@ -148,16 +157,18 @@ Function Test-AutoDetect {
             Write-Host
         }
         catch {
-            Write-Error $_.Exception
+            Write-Host
+            Write-Error $_.Exception.Message
+            Write-Host            
         }
     }
 }
 
 Function Read-EASOptions {
-process {
+    process {
         try {
             Write-Host
-            Write-Host "We sent an OPTIONS Request to the On-Premises EAS vDir and below is the response" -ForegroundColor Green
+            Write-Host "We sent an OPTIONS Request to the On-Premises Exchange ActiveSync Virtual Directory and below is the response" -ForegroundColor Green
             Write-Host "The response should contain HTTP code 200 OK" -ForegroundColor Yellow
             Write-Host
             $authType = $('Bearer {0}' -f $accessToken)
@@ -171,7 +182,9 @@ process {
             $webResponse.RawContent
         }
         catch [System.Net.WebException] {
-            Write-Error $_.Exception
+            Write-Host
+            Write-Error $_.Exception.Message
+            Write-Host    
             throw
         }
     }
@@ -181,7 +194,7 @@ Function Read-EASSettings {
     process {
         try {
             Write-Host
-            Write-Host "We sent a SETTINGS Request to the On-Premises EAS vDir and below is the response" -ForegroundColor Green
+            Write-Host "We sent a SETTINGS Request to the On-Premises Exchange ActiveSync Virtual Directory and below is the response" -ForegroundColor Green
             Write-Host "The response should contain HTTP code 200 OK" -ForegroundColor Yellow
             Write-Host
             $requestURI = New-Object "System.Uri" -ArgumentList "$($easUrl)?Cmd=Settings&DeviceId=OutlookService&DeviceType=OutlookService"
@@ -200,7 +213,9 @@ Function Read-EASSettings {
             [System.Convert]::ToBase64String($webResponse.Content)
         }
         catch {
-            Write-Error $_.Exception
+            Write-Host
+            Write-Error $_.Exception.Message
+            Write-Host    
             throw
         }
     }
@@ -232,17 +247,18 @@ Function Get-AccessToken {
             return $authResult.AccessToken
             }
         catch {
-            Write-Error $_.Exception
+            Write-Host
+            Write-Error $_.Exception.Message
+            Write-Host    
             exit
         }
     }
 }
 
 function Show-JWTtoken {
-     param(
+    param (
         [string]$token
-    )
-
+        )
     process {
             $tokenheader = $token.Split(".")[0]
             while ($tokenheader.Length % 4) { $tokenheader += "=" }
@@ -257,8 +273,6 @@ function Show-JWTtoken {
     }
 }
 
-$SavedErrorActionPreference = $ErrorActionPreference
-$ErrorActionPreference = 'Stop'
 If ($TestEAS)  {
     Write-Host "Installing ADAL package. Please accept if prompted." -ForegroundColor Green
     Install-Package Microsoft.IdentityModel.Clients.ActiveDirectory -RequiredVersion 3.19.8 -Source 'https://www.nuget.org/api/v2' -Scope CurrentUser
@@ -267,11 +281,11 @@ If ($TestEAS)  {
     $packagePath = Split-Path $package.Source -Parent
     $dllPath = Join-Path -Path $packagePath -ChildPath "lib/net45/Microsoft.IdentityModel.Clients.ActiveDirectory.dll"
     Add-Type -Path $dllPath -ErrorAction Stop
-
     $easUrl = Read-AutoDv2EAS
+    Test-EASBearer
+    Test-AutoDetect
     $accessToken = Get-AccessToken -easUrl $easUrl -SMTPAddress $SMTPAddress
     Show-JWTtoken -token $accessToken
-
     Read-EASOptions -easUrl $easUrl -accessToken $accessToken
     Read-EASSettings -easUrl $easUrl -accessToken $accessToken
 }
@@ -280,5 +294,3 @@ else {
     Test-EASBearer
     Test-AutoDetect
 }
-
-$ErrorActionPreference = $SavedErrorActionPreference
