@@ -1,2 +1,2 @@
 # PowerShell
-Location for all of my PowerShell Scripts
+Location for all of my Public PowerShell Scripts
