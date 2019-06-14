@@ -125,6 +125,14 @@ Function Test-EASBearer {
             Write-Host "ERROR: We did not receive a response from AutoDiscover so we cannot test the Exchange ActiveSync Virtual Directory" -ForegroundColor Red -Verbose
             Write-Host
         }
+        catch [System.Security.Authentication.AuthenticationException] {
+            Write-Host
+            Write-Host "We sent an Empty Bearer Token Request to the On-Premises Exchange ActiveSync Virtual Directory and below is the response" -ForegroundColor Green
+            Write-Host "The response should contain a valid WWW-Authenticate=Bearer. Make sure the authorization_uri is populated" -ForegroundColor Yellow
+            Write-Host "---------------------------------------------------------------------------------------------------------------"
+            Write-Host "ERROR: We noticed a certificate error so we cannot test the Exchange ActiveSync Virtual Directory, please chect your certificates for $easUrl" -ForegroundColor Red -Verbose
+            Write-Host
+        }
         catch {
             Write-Host
             Write-Host "We sent an Empty Bearer Token Request to the On-Premises Exchange ActiveSync Virtual Directory and below is the response" -ForegroundColor Green
@@ -145,16 +153,32 @@ Function Test-AutoDetect {
             $RequestURI = "https://prod-api.acompli.net/autodetect/detect?services=office365,outlook,google,icloud,yahoo&protocols=rest-cloud,rest-outlook,rest-office365,eas,imap,smtp"
             $webResponse = Invoke-WebRequest -Uri $RequestURI -Headers @{'x-email' = $($SMTP)} -Method GET
             $jsonResponse = $webResponse.Content | ConvertFrom-Json
-            Write-Host
-            Write-Host "Autodetect has the following services listed for the user" -ForegroundColor Green
-            Write-Host "This should have AAD pointing to Microsoft Online and On-Premises to the correct EAS URL" -ForegroundColor Yellow
-            Write-Host "---------------------------------------------------------------------------------------------------------------"
-            Write-Host "Service:    " $jsonResponse.services.service
-            Write-Host "Protocol:   " $jsonResponse.services.protocol
-            Write-Host "Hostname:   " $jsonResponse.services.hostname
-            Write-Host "Azure AD:   " $jsonResponse.services.aad
-            Write-Host "On-Premises:" $jsonResponse.services.onprem
-            Write-Host
+            if (!$jsonResponse.services){
+                Write-Host
+                Write-Host "Autodetect has the following services listed for the user" -ForegroundColor Green
+                Write-Host "This should have AAD pointing to Microsoft Online and On-Premises to the correct EAS URL" -ForegroundColor Yellow
+                Write-Host "---------------------------------------------------------------------------------------------------------------"
+                Write-Host "Service:    " $jsonResponse.protocols.service
+                Write-Host "Protocol:   " $jsonResponse.protocols.protocol
+                Write-Host "Hostname:   " $jsonResponse.protocols.hostname
+                Write-Host "Azure AD:   " $jsonResponse.protocols.aad
+                Write-Host "On-Premises:" $jsonResponse.protocols.onprem
+                Write-Host "Error:      " $jsonResponse.protocols.insecure                
+                Write-Host
+            }
+
+            else {
+                Write-Host
+                Write-Host "Autodetect has the following services listed for the user" -ForegroundColor Green
+                Write-Host "This should have AAD pointing to Microsoft Online and On-Premises to the correct EAS URL" -ForegroundColor Yellow
+                Write-Host "---------------------------------------------------------------------------------------------------------------"
+                Write-Host "Service:    " $jsonResponse.services.service
+                Write-Host "Protocol:   " $jsonResponse.services.protocol
+                Write-Host "Hostname:   " $jsonResponse.services.hostname
+                Write-Host "Azure AD:   " $jsonResponse.services.aad
+                Write-Host "On-Premises:" $jsonResponse.services.onprem
+                Write-Host
+            }
         }
         catch {
             Write-Host
