@@ -299,7 +299,7 @@ function Show-JWTtoken {
 
 If ($TestEAS)  {
     Write-Host "Installing ADAL package. Please accept if prompted." -ForegroundColor Green
-    Install-Package Microsoft.IdentityModel.Clients.ActiveDirectory -RequiredVersion 3.19.8 -Source 'https://www.nuget.org/api/v2' -Scope CurrentUser
+    Install-Package Microsoft.IdentityModel.Clients.ActiveDirectory -RequiredVersion 3.19.8 -Source 'https://www.nuget.org/api/v2' -SkipDependencies -Scope CurrentUser
     Write-Host "Loading ADAL package" -ForegroundColor Green
     $package = Get-Package "Microsoft.IdentityModel.Clients.ActiveDirectory"
     $packagePath = Split-Path $package.Source -Parent
